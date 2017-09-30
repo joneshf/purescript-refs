@@ -3,27 +3,49 @@
 
 'modifyRef\''(Ref, F) ->
     fun () ->
-        [{value, Value1}] = ets:lookup(Ref, value),
-        #{state := State, value := Value2} = F(Value1),
-        ets:insert(Ref, {value, State}),
-        Value2
+        rpc(Ref, {modify, F})
     end.
 
 newRef(Value) ->
     fun () ->
-        Ref = ets:new(ref, []),
-        ets:insert(Ref, {value, Value}),
-        Ref
+        spawn(fun() -> ref(Value) end)
     end.
 
 readRef(Ref) ->
     fun () ->
-        [{value, Value}] = ets:lookup(Ref, value),
-        Value
+        rpc(Ref, read)
     end.
 
 writeRef(Ref, Value) ->
     fun () ->
-        ets:insert(Ref, {value, Value}),
-        unit
+        rpc(Ref, {write, Value})
+    end.
+
+%% Ref implementation
+
+ref(Value) ->
+    receive
+        {From, {modify, F}} ->
+            #{ state := NewValue, value := Result } = F(Value),
+            respond(From, Result),
+            ref(NewValue);
+
+        {From, read} ->
+            respond(From, Value),
+            ref(Value);
+
+
+        {From, {write, NewValue}} ->
+            respond(From, unit),
+            ref(NewValue)
+    end.
+
+respond(Pid, Response) ->
+    Pid ! {self(), Response}.
+
+rpc(Pid, Request) ->
+    Pid ! {self(), Request},
+    receive
+        {Pid, Response} ->
+            Response
     end.
