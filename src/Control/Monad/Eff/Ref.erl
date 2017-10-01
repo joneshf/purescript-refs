@@ -1,51 +1,44 @@
 -module(control_monad_eff_ref@foreign).
+-behavior(gen_server).
 -export(['modifyRef\''/2, newRef/1, readRef/1, writeRef/2]).
+-export([code_change/3, handle_call/3, handle_cast/2, handle_info/2, init/1, terminate/2]).
 
 'modifyRef\''(Ref, F) ->
     fun () ->
-        rpc(Ref, {modify, F})
+        gen_server:call(Ref, {modify, F})
     end.
 
 newRef(Value) ->
     fun () ->
-        spawn(fun() -> ref(Value) end)
+        {ok, Pid} = gen_server:start(?MODULE, [Value], []),
+        Pid
     end.
 
 readRef(Ref) ->
     fun () ->
-        rpc(Ref, read)
+        gen_server:call(Ref, read)
     end.
 
 writeRef(Ref, Value) ->
     fun () ->
-        rpc(Ref, {write, Value})
+        gen_server:call(Ref, {write, Value})
     end.
 
-%% Ref implementation
+%% gen_server callbacks
 
-ref(Value) ->
-    receive
-        {From, {modify, F}} ->
-            #{ state := NewValue, value := Result } = F(Value),
-            respond(From, Result),
-            ref(NewValue);
+code_change(_OldVersion, State, _Extra) -> {ok, State}.
 
-        {From, read} ->
-            respond(From, Value),
-            ref(Value);
+init(Value) ->
+    {ok, Value}.
 
+handle_call({modify, F}, _From, Value) ->
+    #{ state := NewState, value := NewValue } = F(Value),
+    {reply, NewValue, NewState};
+handle_call(read, _From, State) -> {reply, State, State};
+handle_call({write, State}, _From, _State) -> {reply, unit, State}.
 
-        {From, {write, NewValue}} ->
-            respond(From, unit),
-            ref(NewValue)
-    end.
+handle_cast(_Request, State) -> {noreply, State}.
 
-respond(Pid, Response) ->
-    Pid ! {self(), Response}.
+handle_info(_Info, State) -> {noreply, State}.
 
-rpc(Pid, Request) ->
-    Pid ! {self(), Request},
-    receive
-        {Pid, Response} ->
-            Response
-    end.
+terminate(_Reason, _State) -> ok.
