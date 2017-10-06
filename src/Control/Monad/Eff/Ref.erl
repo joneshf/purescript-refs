@@ -10,7 +10,7 @@
 
 newRef(Value) ->
     fun () ->
-        {ok, Pid} = gen_server:start(?MODULE, [Value], []),
+        {ok, Pid} = gen_server:start(?MODULE, Value, []),
         Pid
     end.
 
