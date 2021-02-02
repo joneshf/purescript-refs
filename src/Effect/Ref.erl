@@ -3,7 +3,7 @@
 -export(['modify\''/2, new/1, read/1, write/2]).
 -export([code_change/3, handle_call/3, handle_cast/2, handle_info/2, init/1, terminate/2]).
 
-'modify\''(Ref, F) ->
+'modify\''(F, Ref) ->
     fun () ->
         gen_server:call(Ref, {modify, F})
     end.
@@ -19,7 +19,7 @@ read(Ref) ->
         gen_server:call(Ref, read)
     end.
 
-write(Ref, Value) ->
+write(Value, Ref) ->
     fun () ->
         gen_server:call(Ref, {write, Value})
     end.
