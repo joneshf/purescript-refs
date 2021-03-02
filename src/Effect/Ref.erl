@@ -1,9 +1,9 @@
 -module(effect_ref@foreign).
 -behavior(gen_server).
--export(['modify\''/2, new/1, read/1, write/2]).
+-export([modifyImpl/2, new/1, newWithSelf/1, read/1, write/2]).
 -export([code_change/3, handle_call/3, handle_cast/2, handle_info/2, init/1, terminate/2]).
 
-'modify\''(F, Ref) ->
+modifyImpl(F, Ref) ->
     fun () ->
         gen_server:call(Ref, {modify, F})
     end.
@@ -11,6 +11,14 @@
 new(Value) ->
     fun () ->
         {ok, Pid} = gen_server:start(?MODULE, Value, []),
+        Pid
+    end.
+
+newWithSelf(MkValue) ->
+    fun () ->
+        {ok, Pid} = gen_server:start(?MODULE, undefined, []),
+        Value = MkValue(Pid),
+        gen_server:call(Pid, {write, Value}),
         Pid
     end.
 

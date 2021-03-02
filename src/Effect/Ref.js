@@ -6,13 +6,21 @@ exports.new = function (val) {
   };
 };
 
+exports.newWithSelf = function (f) {
+  return function () {
+    var ref = { value: null };
+    ref.value = f(ref);
+    return ref;
+  };
+};
+
 exports.read = function (ref) {
   return function () {
     return ref.value;
   };
 };
 
-exports["modify'"] = function (f) {
+exports.modifyImpl = function (f) {
   return function (ref) {
     return function () {
       var t = f(ref.value);
@@ -26,7 +34,6 @@ exports.write = function (val) {
   return function (ref) {
     return function () {
       ref.value = val;
-      return {};
     };
   };
 };

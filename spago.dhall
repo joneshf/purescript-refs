@@ -2,9 +2,9 @@
 Welcome to a Spago project!
 You can edit this file as you like.
 -}
-{ name = "purescript-refs"
-, dependencies = [ "assert", "console", "effect", "psci-support" ]
+{ name = "control"
+, dependencies = [ "effect", "prelude" ]
 , packages = ./packages.dhall
-, sources = [ "src/**/*.purs", "test/**/*.purs" ]
+, sources = [ "src/**/*.purs" ]
 , backend = "purerl"
 }
